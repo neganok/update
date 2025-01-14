@@ -4,7 +4,6 @@ import time
 import os
 import requests
 from datetime import timedelta
-from gpuinfo import GPUInfo  # Thêm thư viện gpuinfo
 
 tienTrinh = ['flood', 'tlskill', 'bypasscf', 'killercf', 'ctccf', 'floodctc']
 TELEGRAM_TOKEN = '8039598203:AAHEmboLSteoEIvu-bSnqFUVn7A6OgDQVr4'
@@ -30,19 +29,17 @@ def check_system_usage():
     cpu_free = 100 - cpu_usage
     ram_free = 100 - ram_usage
     cpu_freq = psutil.cpu_freq().current
-    
-    # Sử dụng gpuinfo để lấy thông tin GPU
+
+    # Sử dụng lệnh nvidia-smi để lấy thông tin GPU
     gpu_info = "Không có GPU"
     try:
-        gpus = GPUInfo.get_info()  # Lấy danh sách GPU
-        if len(gpus) > 0:
-            # Lấy thông tin của GPU đầu tiên
-            gpu = gpus[0]
-            gpu_info = f"GPU: {gpu.name}, VRAM: {gpu.memoryTotal / 1024} MB"
-        else:
-            gpu_info = "Không có GPU"
-    except Exception as e:
-        gpu_info = f"Không thể xác định GPU: {e}"
+        # Gọi lệnh `nvidia-smi` để lấy thông tin GPU
+        result = subprocess.check_output("nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used --format=csv,noheader,nounits", shell=True, encoding='utf-8')
+        # Kết quả trả về sẽ có dạng:
+        # "NVIDIA GeForce GTX 1080, 8192 MiB, 4096 MiB, 4096 MiB"
+        gpu_info = result.strip()
+    except subprocess.CalledProcessError:
+        gpu_info = "Không có GPU NVIDIA được phát hiện hoặc `nvidia-smi` không khả dụng"
 
     uptime_seconds = time.time() - psutil.boot_time()
     uptime = str(timedelta(seconds=int(uptime_seconds)))
@@ -62,7 +59,7 @@ def check_system_usage():
         f"---------------------------\n"
         f"Uptime: {uptime}\n"
         f"CPU: ({total_cpu} cores) @ {cpu_freq:.2f} GHz\n"
-        f"{gpu_info}\n"  # Thêm thông tin GPU vào message
+        f"GPU: {gpu_info}\n"
     )
     
     return cpu_usage, ram_usage, message
