@@ -4,6 +4,7 @@ import time
 import os
 import requests
 from datetime import timedelta
+from gpuinfo import GPUInfo  # Thêm dòng này để sử dụng gpuinfo
 
 tienTrinh = ['flood', 'tlskill', 'bypasscf', 'killercf', 'ctccf', 'floodctc']
 TELEGRAM_TOKEN = '8039598203:AAHEmboLSteoEIvu-bSnqFUVn7A6OgDQVr4'
@@ -29,14 +30,26 @@ def check_system_usage():
     cpu_free = 100 - cpu_usage
     ram_free = 100 - ram_usage
     cpu_freq = psutil.cpu_freq().current
-    gpu_info = "Không có GPU"
 
-    if os.path.exists("/dev/nvidia0"): gpu_info = "NVIDIA GPU Detected"
-    elif os.path.exists("/dev/dri/card0"): gpu_info = "GPU tích hợp (AMD hoặc Intel)"
-    
+    # Sử dụng gpuinfo để lấy thông tin GPU
+    gpu_info = "Không có GPU"
+    gpu_memory = "Không xác định"
+
+    try:
+        # Lấy thông tin GPU từ gpuinfo
+        gpus = GPUInfo.get_info()
+        if gpus:
+            # Lấy thông tin GPU đầu tiên (nếu có)
+            gpu_info = gpus[0].name  # Tên GPU
+            gpu_memory = f"VRAM: {gpus[0].memory_total} MB"  # VRAM
+    except Exception as e:
+        gpu_info = f"Không thể xác định GPU: {e}"
+
+    # Tính toán uptime
     uptime_seconds = time.time() - psutil.boot_time()
     uptime = str(timedelta(seconds=int(uptime_seconds)))
 
+    # Tạo thông báo hệ thống
     message = (
         f"🖥️ **Trạng thái hệ thống**:\n"
         f"---------------------------\n"
@@ -52,7 +65,7 @@ def check_system_usage():
         f"---------------------------\n"
         f"Uptime: {uptime}\n"
         f"CPU: ({total_cpu} cores) @ {cpu_freq:.2f} GHz\n"
-        f"GPU: {gpu_info}\n"
+        f"GPU: {gpu_info} - {gpu_memory}\n"  # Thêm thông tin GPU vào thông báo
     )
     
     return cpu_usage, ram_usage, message
