@@ -27,23 +27,24 @@ def send_telegram_message(message):
 
 # Hàm kiểm tra tình trạng sử dụng RAM và CPU
 def check_system_usage():
-    # Lấy thông tin sử dụng RAM và CPU
+    # Lấy thông tin sử dụng CPU và RAM
     ram = psutil.virtual_memory()
+    cpu = psutil.cpu_count(logical=False)
+    cpu_usage = psutil.cpu_percent(interval=1)
     ram_usage = ram.percent
-    ram_total = ram.total / (1024 ** 3)  # RAM tổng (GB)
-    ram_used = ram.used / (1024 ** 3)   # RAM đã sử dụng (GB)
-    ram_free = ram.available / (1024 ** 3)  # RAM còn trống (GB)
-
-    cpu_usage = psutil.cpu_percent(interval=1)  # Kiểm tra CPU trong 1 giây
-    cpu_total = psutil.cpu_count()  # Số CPU trên hệ thống
-
-    # Tạo thông báo với thông tin tài nguyên hệ thống
-    message = (f"Total CPU: {cpu_total} cores | "
-               f"CPU Usage: {cpu_usage}% | "
-               f"Total RAM: {ram_total:.2f} GB | "
-               f"Used RAM: {ram_used:.2f} GB | "
-               f"Free RAM: {ram_free:.2f} GB | "
-               f"RAM Usage: {ram_usage}%")
+    total_ram = ram.total / (1024 ** 3)  # Chuyển đổi sang GB
+    used_ram = ram.used / (1024 ** 3)  # Chuyển đổi sang GB
+    free_ram = ram.free / (1024 ** 3)  # Chuyển đổi sang GB
+    
+    # Tạo thông báo tình trạng hệ thống
+    message = f"""
+    Tổng CPU: {cpu} lõi
+    Mức sử dụng CPU: {cpu_usage}%
+    Tổng RAM: {total_ram:.2f} GB
+    RAM đã sử dụng: {used_ram:.2f} GB
+    RAM còn lại: {free_ram:.2f} GB
+    Mức sử dụng RAM: {ram_usage}%
+    """
     return cpu_usage, ram_usage, message
 
 # Hàm thực hiện lệnh pkill với -9 -f (kill mạnh mẽ)
@@ -68,7 +69,6 @@ def kill_processes():
 def monitor_system():
     last_kill_time = time.time()  # Lưu thời gian thực hiện pkill cuối cùng
     last_telegram_time = time.time()  # Lưu thời gian gửi thông báo Telegram cuối cùng
-    last_total_kill_time = time.time()  # Lưu thời gian thực hiện pkill tổng cuối cùng
 
     while True:
         current_time = time.time()
@@ -76,24 +76,22 @@ def monitor_system():
         # Cập nhật trạng thái hệ thống mỗi 7 giây
         if current_time - last_telegram_time >= 7:
             cpu_usage, ram_usage, system_message = check_system_usage()  # Lấy thông tin tài nguyên
-            send_telegram_message(f"Trạng thái hệ thống: {system_message}")
+            send_telegram_message(f"Trạng thái hệ thống:\n{system_message}")
             last_telegram_time = current_time  # Cập nhật thời gian gửi thông báo
 
         # Kiểm tra tài nguyên hệ thống nếu sử dụng quá 95% RAM
-        cpu_usage, ram_usage, _ = check_system_usage()  # Cập nhật tài nguyên
-
         if ram_usage > 95:
-            print("Cảnh báo: Tài nguyên hệ thống (RAM) vượt quá 95%. Đang thực hiện pkill...")
-            send_telegram_message("Cảnh báo: Tài nguyên hệ thống (RAM) vượt quá 95%. Đang thực hiện pkill...")
+            print("Cảnh báo: Tài nguyên hệ thống vượt quá 95% RAM. Đang thực hiện pkill...")
+            send_telegram_message("Cảnh báo: Tài nguyên hệ thống vượt quá 95% RAM. Đang thực hiện pkill...")
             kill_processes()
             last_kill_time = current_time  # Cập nhật thời gian pkill
 
         # Kiểm tra và kill tiến trình sau mỗi 5 phút (300 giây)
-        if current_time - last_total_kill_time >= 300:
+        if current_time - last_kill_time >= 300:
             print("5 phút đã trôi qua, thực hiện pkill tất cả tiến trình")
             send_telegram_message("Đang thực hiện pkill tất cả tiến trình...")
             kill_processes()
-            last_total_kill_time = current_time  # Cập nhật thời gian pkill tổng
+            last_kill_time = current_time  # Cập nhật thời gian pkill tổng
 
         time.sleep(1)  # Chờ 1 giây trước khi kiểm tra lại
 
