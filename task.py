@@ -30,22 +30,18 @@ def check_system_usage():
     ram_free = 100 - ram_usage
     cpu_freq = psutil.cpu_freq().current
 
+    # Lệnh nvidia-smi để lấy thông tin GPU
     gpu_info = "Không có GPU"
     try:
-        result = subprocess.check_output("nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used --format=csv,noheader,nounits", shell=True, encoding='utf-8')
-        gpu_details = result.strip().split(', ')
-        gpu_name = gpu_details[0]
-        total_vram = gpu_details[1]
-        free_vram = gpu_details[2]
-        used_vram = gpu_details[3]
-        gpu_usage = f"Sử dụng GPU: {round(int(used_vram) / int(total_vram) * 100, 2)}%"
-        gpu_info = f"GPU: {gpu_name}\nBộ nhớ tổng: {total_vram} MiB\nBộ nhớ trống: {free_vram} MiB\nBộ nhớ đã sử dụng: {used_vram} MiB\n{gpu_usage}"
+        result = subprocess.check_output("nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits", shell=True, encoding='utf-8')
+        gpu_info = result.strip()
     except subprocess.CalledProcessError:
         gpu_info = "Không có GPU NVIDIA được phát hiện hoặc `nvidia-smi` không khả dụng"
 
     uptime_seconds = time.time() - psutil.boot_time()
     uptime = str(timedelta(seconds=int(uptime_seconds)))
 
+    # Hiển thị thông báo với thông tin hệ thống
     message = (
         f"🖥️ **Trạng thái hệ thống**:\n"
         f"---------------------------\n"
@@ -61,17 +57,20 @@ def check_system_usage():
         f"---------------------------\n"
         f"Uptime: {uptime}\n"
         f"CPU: ({total_cpu} cores) @ {cpu_freq:.2f} GHz\n"
-        f"{gpu_info}\n"
+        f"GPU: {gpu_info}\n"
     )
     
     return cpu_usage, ram_usage, message
 
 def kill_processes():
     for process_name in tienTrinh:
+        print(f"Đang kill tiến trình: {process_name} với pkill -9 -f")
         try:
             if os.geteuid() != 0:
+                print("Cảnh báo: Cần quyền root để thực hiện lệnh pkill.")
                 return
             subprocess.run(['pkill', '-9', '-f', process_name], check=True)
+            print(f"Đã kill tiến trình: {process_name}")
         except Exception as e:
             print(f"Lỗi khi kill tiến trình {process_name}: {e}")
 
@@ -93,11 +92,13 @@ def monitor_system():
         cpu_usage, ram_usage, _ = check_system_usage()
 
         if ram_usage > 95:
+            print("⚠️ RAM > 95%. Đang pkill...")
             send_telegram_message("⚠️ RAM > 95%. Đang pkill...")
             kill_processes()
             last_kill_time = current_time
 
         if current_time - last_kill_time >= 300:
+            print("⏳ 5 phút đã trôi qua, thực hiện pkill tất cả tiến trình")
             send_telegram_message("⏳ Đang thực hiện pkill tất cả tiến trình...")
             kill_processes()
             last_kill_time = current_time
