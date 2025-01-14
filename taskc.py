@@ -4,16 +4,12 @@ import time
 import os
 import requests
 from datetime import timedelta
-from gpuinfo import GPUInfo
+from gpuinfo import GPUInfo  # Thêm thư viện gpuinfo
 
-# Danh sách các tiến trình cần kill
 tienTrinh = ['flood', 'tlskill', 'bypasscf', 'killercf', 'ctccf', 'floodctc']
-
-# Cấu hình Bot Telegram
 TELEGRAM_TOKEN = '8039598203:AAHEmboLSteoEIvu-bSnqFUVn7A6OgDQVr4'
 CHAT_ID = '7371969470'
 
-# Hàm gửi thông báo qua Telegram
 def send_telegram_message(message):
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     params = {'chat_id': CHAT_ID, 'text': message}
@@ -24,7 +20,6 @@ def send_telegram_message(message):
     except Exception as e:
         print(f"Không thể kết nối đến Telegram: {e}")
 
-# Hàm kiểm tra tình trạng sử dụng RAM, CPU và GPU
 def check_system_usage():
     ram_usage = psutil.virtual_memory().percent
     cpu_usage = psutil.cpu_percent(interval=1)
@@ -35,21 +30,20 @@ def check_system_usage():
     cpu_free = 100 - cpu_usage
     ram_free = 100 - ram_usage
     cpu_freq = psutil.cpu_freq().current
-
-    # Kiểm tra GPU
+    
+    # Sử dụng gpuinfo để lấy thông tin GPU
     gpu_info = "Không có GPU"
     try:
-        gpus = GPUInfo.get_info()
-        if gpus:
-            gpu_info = ""
-            for gpu in gpus:
-                gpu_info += f"GPU: {gpu.name}, VRAM: {gpu.memoryTotal} MB\n"
+        gpus = GPUInfo.get_info()  # Lấy danh sách GPU
+        if len(gpus) > 0:
+            # Lấy thông tin của GPU đầu tiên
+            gpu = gpus[0]
+            gpu_info = f"GPU: {gpu.name}, VRAM: {gpu.memoryTotal / 1024} MB"
         else:
-            gpu_info = "Không phát hiện GPU"
+            gpu_info = "Không có GPU"
     except Exception as e:
         gpu_info = f"Không thể xác định GPU: {e}"
 
-    # Tính uptime hệ thống
     uptime_seconds = time.time() - psutil.boot_time()
     uptime = str(timedelta(seconds=int(uptime_seconds)))
 
@@ -68,12 +62,11 @@ def check_system_usage():
         f"---------------------------\n"
         f"Uptime: {uptime}\n"
         f"CPU: ({total_cpu} cores) @ {cpu_freq:.2f} GHz\n"
-        f"{gpu_info}\n"
+        f"{gpu_info}\n"  # Thêm thông tin GPU vào message
     )
     
     return cpu_usage, ram_usage, message
 
-# Hàm thực hiện lệnh pkill với -9 -f (kill mạnh mẽ)
 def kill_processes():
     for process_name in tienTrinh:
         print(f"Đang kill tiến trình: {process_name} với pkill -9 -f")
@@ -86,7 +79,6 @@ def kill_processes():
         except Exception as e:
             print(f"Lỗi khi kill tiến trình {process_name}: {e}")
 
-# Hàm chính để theo dõi hệ thống và thực thi pkill khi cần
 def monitor_system():
     last_kill_time = time.time()
     last_telegram_time = time.time()
