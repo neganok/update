@@ -45,15 +45,16 @@ def check_system_usage():
     message = (
         f"🖥️ **Trạng thái hệ thống**:\n"
         f"---------------------------\n"
-        f"⚙️ **Tổng số CPU**: {total_cpu} lõi\n"
-        f"💻 **Phần trăm sử dụng CPU**: {cpu_usage}%\n"
-        f"🌿 **Phần trăm CPU còn trống**: {cpu_free}%\n"
+        f"🚀 **Phần trăm sử dụng CPU**: {cpu_usage}%\n"
+        f"🚀 **Phần trăm sử dụng RAM**: {ram_usage}%\n"
         f"---------------------------\n"
-        f"💾 **Tổng dung lượng RAM**: {total_ram:.2f} GB\n"
-        f"🗂️ **RAM đã sử dụng**: {used_ram:.2f} GB\n"
-        f"🛑 **RAM còn trống**: {free_ram:.2f} GB\n"
-        f"🌿 **Phần trăm sử dụng RAM**: {ram_usage}%\n"
-        f"🌿 **Phần trăm RAM còn trống**: {ram_free}%\n"
+        f"👉 **Phần trăm CPU còn trống**: {cpu_free}%\n"
+        f"👉 **Phần trăm RAM còn trống**: {ram_free}%\n"
+        f"---------------------------\n"
+        f"⚙️ **Tổng số CPU**: {total_cpu} lõi\n"
+        f"⚙️ **Tổng dung lượng RAM**: {total_ram:.2f} GB\n"
+        f"⚙️ **RAM đã sử dụng**: {used_ram:.2f} GB\n"
+        f"⚙️ **RAM còn trống**: {free_ram:.2f} GB\n"
         f"---------------------------\n"
         f"Uptime: {uptime}\n"
         f"CPU: ({total_cpu} cores) @ {cpu_freq:.2f} GHz\n"
@@ -93,7 +94,7 @@ def monitor_system():
 
         if ram_usage > 95:
             print("⚠️ RAM > 95%. Đang pkill...")
-            send_telegram_message("⚠️ RAM > 95%. Đang pkill...")
+            send_telegram_message("⚠️ Cảnh báo RAM: > 95%. Đang pkill...")
             kill_processes()
             last_kill_time = current_time
 
