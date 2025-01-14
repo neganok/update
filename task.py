@@ -28,9 +28,22 @@ def send_telegram_message(message):
 # Hàm kiểm tra tình trạng sử dụng RAM và CPU
 def check_system_usage():
     # Lấy thông tin sử dụng RAM và CPU
-    ram_usage = psutil.virtual_memory().percent
+    ram = psutil.virtual_memory()
+    ram_usage = ram.percent
+    ram_total = ram.total / (1024 ** 3)  # RAM tổng (GB)
+    ram_used = ram.used / (1024 ** 3)   # RAM đã sử dụng (GB)
+    ram_free = ram.available / (1024 ** 3)  # RAM còn trống (GB)
+
     cpu_usage = psutil.cpu_percent(interval=1)  # Kiểm tra CPU trong 1 giây
-    message = f"CPU Usage: {cpu_usage}% | RAM Usage: {ram_usage}%"
+    cpu_total = psutil.cpu_count()  # Số CPU trên hệ thống
+
+    # Tạo thông báo với thông tin tài nguyên hệ thống
+    message = (f"Total CPU: {cpu_total} cores | "
+               f"CPU Usage: {cpu_usage}% | "
+               f"Total RAM: {ram_total:.2f} GB | "
+               f"Used RAM: {ram_used:.2f} GB | "
+               f"Free RAM: {ram_free:.2f} GB | "
+               f"RAM Usage: {ram_usage}%")
     return cpu_usage, ram_usage, message
 
 # Hàm thực hiện lệnh pkill với -9 -f (kill mạnh mẽ)
@@ -66,12 +79,12 @@ def monitor_system():
             send_telegram_message(f"Trạng thái hệ thống: {system_message}")
             last_telegram_time = current_time  # Cập nhật thời gian gửi thông báo
 
-        # Kiểm tra tài nguyên hệ thống nếu sử dụng quá 95%
+        # Kiểm tra tài nguyên hệ thống nếu sử dụng quá 95% RAM
         cpu_usage, ram_usage, _ = check_system_usage()  # Cập nhật tài nguyên
 
-        if cpu_usage > 95 or ram_usage > 95:
-            print("Cảnh báo: Tài nguyên hệ thống vượt quá 95%. Đang thực hiện pkill...")
-            send_telegram_message("Cảnh báo: Tài nguyên hệ thống vượt quá 95%. Đang thực hiện pkill...")
+        if ram_usage > 95:
+            print("Cảnh báo: Tài nguyên hệ thống (RAM) vượt quá 95%. Đang thực hiện pkill...")
+            send_telegram_message("Cảnh báo: Tài nguyên hệ thống (RAM) vượt quá 95%. Đang thực hiện pkill...")
             kill_processes()
             last_kill_time = current_time  # Cập nhật thời gian pkill
 
