@@ -72,6 +72,8 @@ def monitor_system():
             last_telegram_time = current_time  # Cập nhật thời gian gửi thông báo
 
         # Kiểm tra tài nguyên hệ thống nếu sử dụng quá 95%
+        cpu_usage, ram_usage, _ = check_system_usage()  # Gọi lại để cập nhật giá trị mới
+
         if cpu_usage > 95 or ram_usage > 95:
             print("Cảnh báo: Tài nguyên hệ thống vượt quá 95%. Đang thực hiện pkill...")
             send_telegram_message("Cảnh báo: Tài nguyên hệ thống vượt quá 95%. Đang thực hiện pkill...")
