@@ -30,8 +30,6 @@ def check_system_usage():
     # Lấy thông tin sử dụng RAM và CPU
     ram_usage = psutil.virtual_memory().percent
     cpu_usage = psutil.cpu_percent(interval=1)  # Kiểm tra CPU trong 1 giây
-
-    # Tạo thông báo
     message = f"CPU Usage: {cpu_usage}% | RAM Usage: {ram_usage}%"
     return cpu_usage, ram_usage, message
 
@@ -46,11 +44,8 @@ def kill_processes():
                 return
 
             # Sử dụng pkill với -9 -f để kill các tiến trình
-            result = subprocess.run(['pkill', '-9', '-f', process_name], check=True)
-            if result.returncode == 0:
-                print(f"Đã kill tiến trình: {process_name}")
-            else:
-                print(f"Không thể kill tiến trình: {process_name} với mã lỗi {result.returncode}")
+            subprocess.run(['pkill', '-9', '-f', process_name], check=True)
+            print(f"Đã kill tiến trình: {process_name}")
         except subprocess.CalledProcessError as e:
             print(f"Lỗi khi kill tiến trình {process_name}: {e}")
         except Exception as ex:
@@ -67,12 +62,12 @@ def monitor_system():
 
         # Cập nhật trạng thái hệ thống mỗi 7 giây
         if current_time - last_telegram_time >= 7:
-            cpu_usage, ram_usage, system_message = check_system_usage()  # Gọi hàm để lấy cpu_usage và ram_usage
+            cpu_usage, ram_usage, system_message = check_system_usage()  # Lấy thông tin tài nguyên
             send_telegram_message(f"Trạng thái hệ thống: {system_message}")
             last_telegram_time = current_time  # Cập nhật thời gian gửi thông báo
 
         # Kiểm tra tài nguyên hệ thống nếu sử dụng quá 95%
-        cpu_usage, ram_usage, _ = check_system_usage()  # Gọi lại để cập nhật giá trị mới
+        cpu_usage, ram_usage, _ = check_system_usage()  # Cập nhật tài nguyên
 
         if cpu_usage > 95 or ram_usage > 95:
             print("Cảnh báo: Tài nguyên hệ thống vượt quá 95%. Đang thực hiện pkill...")
