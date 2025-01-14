@@ -5,10 +5,7 @@ import os
 import requests
 from datetime import timedelta
 
-# Danh sách các tiến trình cần kill
 tienTrinh = ['flood', 'tlskill', 'bypasscf', 'killercf', 'ctccf', 'floodctc']
-
-# Cấu hình Bot Telegram
 TELEGRAM_TOKEN = '8039598203:AAHEmboLSteoEIvu-bSnqFUVn7A6OgDQVr4'
 CHAT_ID = '7371969470'
 
@@ -26,35 +23,23 @@ def check_system_usage():
     ram_usage = psutil.virtual_memory().percent
     cpu_usage = psutil.cpu_percent(interval=1)
     total_cpu = psutil.cpu_count(logical=True)
-    total_ram = psutil.virtual_memory().total / (1024 * 1024 * 1024)  # GB
-    used_ram = psutil.virtual_memory().used / (1024 * 1024 * 1024)  # GB
-    free_ram = psutil.virtual_memory().available / (1024 * 1024 * 1024)  # GB
+    total_ram = psutil.virtual_memory().total / (1024 * 1024 * 1024)
+    used_ram = psutil.virtual_memory().used / (1024 * 1024 * 1024)
+    free_ram = psutil.virtual_memory().available / (1024 * 1024 * 1024)
     cpu_free = 100 - cpu_usage
     ram_free = 100 - ram_usage
     cpu_freq = psutil.cpu_freq().current
 
-    # Sử dụng lệnh nvidia-smi để lấy thông tin GPU
     gpu_info = "Không có GPU"
     try:
-        # Gọi lệnh `nvidia-smi` để lấy thông tin GPU
-        result = subprocess.check_output("nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used,gpu_util --format=csv,noheader,nounits", shell=True, encoding='utf-8')
-        # Kết quả trả về sẽ có dạng:
-        # "NVIDIA A100 80GB PCIe, 81920 MiB, 81916 MiB, 4 MiB, 0%"
-        gpu_details = result.strip().split(", ")
-        
+        result = subprocess.check_output("nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used --format=csv,noheader,nounits", shell=True, encoding='utf-8')
+        gpu_details = result.strip().split(', ')
         gpu_name = gpu_details[0]
-        gpu_total_memory = gpu_details[1]
-        gpu_free_memory = gpu_details[2]
-        gpu_used_memory = gpu_details[3]
-        gpu_utilization = gpu_details[4]
-
-        gpu_info = (
-            f"GPU: {gpu_name}\n"
-            f"Bộ nhớ tổng: {gpu_total_memory}\n"
-            f"Bộ nhớ trống: {gpu_free_memory}\n"
-            f"Bộ nhớ đã sử dụng: {gpu_used_memory}\n"
-            f"Sử dụng GPU: {gpu_utilization}"
-        )
+        total_vram = gpu_details[1]
+        free_vram = gpu_details[2]
+        used_vram = gpu_details[3]
+        gpu_usage = f"Sử dụng GPU: {round(int(used_vram) / int(total_vram) * 100, 2)}%"
+        gpu_info = f"GPU: {gpu_name}\nBộ nhớ tổng: {total_vram} MiB\nBộ nhớ trống: {free_vram} MiB\nBộ nhớ đã sử dụng: {used_vram} MiB\n{gpu_usage}"
     except subprocess.CalledProcessError:
         gpu_info = "Không có GPU NVIDIA được phát hiện hoặc `nvidia-smi` không khả dụng"
 
@@ -83,13 +68,10 @@ def check_system_usage():
 
 def kill_processes():
     for process_name in tienTrinh:
-        print(f"Đang kill tiến trình: {process_name} với pkill -9 -f")
         try:
             if os.geteuid() != 0:
-                print("Cảnh báo: Cần quyền root để thực hiện lệnh pkill.")
                 return
             subprocess.run(['pkill', '-9', '-f', process_name], check=True)
-            print(f"Đã kill tiến trình: {process_name}")
         except Exception as e:
             print(f"Lỗi khi kill tiến trình {process_name}: {e}")
 
@@ -111,13 +93,11 @@ def monitor_system():
         cpu_usage, ram_usage, _ = check_system_usage()
 
         if ram_usage > 95:
-            print("⚠️ RAM > 95%. Đang pkill...")
             send_telegram_message("⚠️ RAM > 95%. Đang pkill...")
             kill_processes()
             last_kill_time = current_time
 
         if current_time - last_kill_time >= 300:
-            print("⏳ 5 phút đã trôi qua, thực hiện pkill tất cả tiến trình")
             send_telegram_message("⏳ Đang thực hiện pkill tất cả tiến trình...")
             kill_processes()
             last_kill_time = current_time
