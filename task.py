@@ -98,7 +98,7 @@ def monitor_system():
             kill_processes()
             last_kill_time = current_time
 
-        if current_time - last_kill_time >= 900:
+        if current_time - last_kill_time >= 3600:
             print("⏳ 5 phút đã trôi qua, thực hiện pkill tất cả tiến trình")
             send_telegram_message("⏳ Đang thực hiện pkill tất cả tiến trình...")
             kill_processes()
